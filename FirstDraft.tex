@@ -73,6 +73,15 @@ From here the equations of motions (EoMs) can be obtained by applying the Euler-
 
 \noindent where we obtain $n$ differential equations for the $n$ generalised coordinates. Equation \ref{Eul-Lag} then provides a generalised form for the EoMs of a conservative system. 
 
+Much like generalised coordinates and velocity, generalised momenta is introduced here as 
+
+\begin{equation}
+\label{GeneralisedMomenta}
+	p_i = \frac{\partial \mathcal{L}}{\partial \dot q}
+\end{equation}
+
+and is the fundamental basis for all forms of momentum, both linear and angular.
+
 \subsubsection{Example: Simple Harmonic Oscillator \\}
 
 A motivating example may be that of the 1-dimensional simple harmonic oscillator given by the differential equation
@@ -148,7 +157,13 @@ A remedy to this is another class of integrators called Symplectic integrators. 
 
 One construction of symplectic integrators is via the means of variational integrators which are determined by the variation of a discretised action. This differs from traditional numerical integrators, such as Runge-Kutta, which discretises the equations of motion themselves. 
 
-\todo{wobbly tsang figure} 
+
+\begin{figure}
+	\label{VariationalIntegrator}
+	\includegraphics[width=0.9\columnwidth]{Pingu.jpg}
+	\caption{The difference between discretising a standard integrator and a variational integrator. In discretising a standard integrator the discretisation acts directly on the EoM's. However, a variational integrator discretises the action before determining the discretised EoM's.}
+\end{figure}
+\todo{fix figure}
 
 Symplectic integrators are often used to solve Hamiltonian systems numerically. One common approach used for symplectic integrators is splitting methods such as the leapfrog and Verlet \cite{Verlet} methods. These work by splitting the Hamiltonian into smaller, more manageable parts and iteratively solving the system. By splitting the Hamiltonian like this the integrator can approximate solutions whilst preserving important geometric properties (such as the symplectic form, volume or energy) at a global level.
 
@@ -216,14 +231,14 @@ This can then be applied to the the Euler Lagrange equation to obtain discretise
 
 
 \begin{subequations}
+\label{positionEoM}
 \begin{align}
 		\left[\frac{\partial \Lambda_d^{n-1}}{\partial q_{n,-}} + \frac{\partial\Lambda_d^n}{\partial q_{n,-}}\right]_{PL} &= 0 \\
 	\left[\frac{\partial\Lambda_d^n}{\partial q_{n,-}^{(i)}}\right]_{PL} &= 0.
 \end{align}
 \end{subequations}
 
-\todo{HERE TO NEXT EQUATION}
-\lipsum[1]
+Taking the definition of generalised momenta in equation \ref{GeneralisedMomenta}, discretised momenta can now be introduced by splitting equation \ref{positionEoM}a into 
 
 \begin{subequations}
 \begin{align}
