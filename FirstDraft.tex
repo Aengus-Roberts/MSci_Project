@@ -48,6 +48,14 @@ Ideally, a global minima would be found but this is not guaranteed by the method
 
 With the ability to identify possibly unseen patterns in data, neural networks are an ideal tool for physicists. One area of neural network development related to this is that of physics informed neural networks (PINN's). These are neural networks that have been given a priori knowledge such as basic physical laws. This knowledge can be encoded into the model in a multitude of ways. Physics informed layers of the neural network are one such encoding such as layers that enforce conservation laws for fluid dynamics. Another encoding is via loss function formulation where the loss function incorporates terms derived from the governing physics equations. These terms will act to penalise the model for deviation from known physical laws. 
 
+\subsection{Loss Functions}
+Loss functions play a crucial role in PINNs often acting as a conduit for incorporating known physical laws. PINN loss functions usually have two purposes:
+\begin{itemize}
+	\item Data Fitting: This ensures that the network accurately predicts values, much like in more general neural networks.
+	\item Physics Information: An encoding of physical laws such as ensuring specific PDE's are satisfied by penalising deviation from governing equations. 
+\end{itemize}
+
+One issue that loss functions face is the requirement of being differentiable with respect to the weights and biases of a network. This often leads to simple regression functions such as mean squared error being selected in order to guarantee this property. A regression function may
 \subsection{Lagrangian Mechanics}
 Here we provide a brief overview of Lagrangian Mechanics, a formalism of classical mechanics prioritising the energy of a system as its initial reference point. 
 
@@ -258,9 +266,6 @@ Taking the definition of generalised momenta in equation \ref{GeneralisedMomenta
 which finally produces a set of discretised equations that can be computationally solved for. By taking initial conditions for $q_0, \pi_0$ the integrator can then forward integrate the system for N iterations whilst preserving (up to a constant error bound) 
 
 Tsang et al. \cite{Tsang_Slimplectic} have developed a \texttt{python} code \texttt{slimplectic} which makes use of the \texttt{SymPy} package to include a computational solver using the slimplectic method as described in equation \ref{slimplecticEqns}. The package takes initial conditions; a value for $r$; a number of timesteps, $N$, for which to iterate; and a lagrangian to determine values for $q_n,\pi_n$ with $n\in\{1,N\}$.
-
-
-\subsection{Loss Functions}
 
 \subsection{Google Jax}
 
