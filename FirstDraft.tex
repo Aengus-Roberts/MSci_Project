@@ -118,11 +118,16 @@ Galley, Tsang and Stein \cite{GalleyEtAl} propose a generalisation of Noether's 
 	\Lambda = \mathcal{L}(\bold{q_1,\dot q_1},t) - \mathcal{L}(\bold{q_2,\dot q_2},t) + K(\bold{q_1,\dot q_1,q_2,\dot q_2},t)
 \end{equation}
 
-where $\mathcal{L}$ is the lagrangian as defined previously and $K$ is an additional coupling term physically similar to a non-conservative potential. The generalised coordinates are doubled, as explained by Galley \cite{Galley}, from $\bold{q,\dot q}$ to $\bold{q_1,\dot q_1, q_2, \dot q_2}$. This allows for the conversion of Hamiltons principle from a boundary value problem (i.e. ``minimise the action passing through given initial and final values") to an initial value problem involving twice the degrees of freedom. These new generalised coordinates must satisfy $q_1(t) = q_2(t)$ and $\dot q_1(t) = \dot q_2(t)$ for $t \in \{t_i, t_f\}$.
+where $\mathcal{L}$ is the lagrangian as defined previously and $K$ is an additional coupling term physically similar to a non-conservative potential. The generalised coordinates are doubled, as explained by Galley \cite{Galley}, from $\bold{q,\dot q}$ to $\bold{q_1,\dot q_1, q_2, \dot q_2}$. This allows for the conversion of Hamiltons principle from a boundary value problem (i.e. ``minimise the action passing through given initial and final values") to an initial value problem involving twice the degrees of freedom. These new generalised coordinates must satisfy $q_1(t) = q_2(t)$ and $\dot q_1(t) = \dot q_2(t)$ for $t \in \{t_i, t_f\}$. The cartoon in figure \ref{doubledCoords} depicts this doubling of coordinates to create a free end point.
 
 Galley \cite{Galley} also shows that $K$ must be antisymmetric in swapping the indices and therefore must also vanish for $\bold q_1 =\bold q_2,\bold{\dot q_1} =\bold{\dot q_2}$.
 
-\todo{galley figure}
+\begin{figure}
+	\label{doubledCoords}
+	\centering
+	\includegraphics[width=0.9\columnwidth]{Pingu.jpg}
+	\caption{A cartoon depicting the doubling of coordinates posited by Galley \cite{Galley}. (a) shows a conservative system where initial and end points are fixed such that the solid path between them minimises the Action and dashed paths represent paths that do not minimise the Action. (b) shows a system with doubled coordinates. the point on the $t=t_f$ line is now free to vary but both the $q_{1,i}$ and $q_{2,i}$ points are fixed on the $t=t_i$ line. Here the $q_f$ point varies in order to globally minimise both paths. The physical limit occurs as $q_{2,i}\to q_{1,i}$ and, assuming the same system is modelled in both (a) and (b), rediscovers the path shown in (a).}
+\end{figure}
 
 For convenience a change of coordinates is often performed due to physical motivation. These are $q_- = (q_1 - q_2)/2$ and $q_+ = (q_1 + q_2)/2$  where the former can be considered a hypothetical displacement that vanishes in the physical limit $q_- \to 0$ and the latter the physically relevant component of the coordinates.
 Note here that equation \ref{non-con-lagran} continues to satisfy the Euler Lagrange equation (equation \ref{Eul-Lag}) when evaluated in the physical limit (PL). This is formulated as
@@ -160,6 +165,7 @@ One construction of symplectic integrators is via the means of variational integ
 
 \begin{figure}
 	\label{VariationalIntegrator}
+	\centering
 	\includegraphics[width=0.9\columnwidth]{Pingu.jpg}
 	\caption{The difference between discretising a standard integrator and a variational integrator. In discretising a standard integrator the discretisation acts directly on the EoM's. However, a variational integrator discretises the action before determining the discretised EoM's.}
 \end{figure}
@@ -241,6 +247,7 @@ This can then be applied to the the Euler Lagrange equation to obtain discretise
 Taking the definition of generalised momenta in equation \ref{GeneralisedMomenta}, discretised momenta can now be introduced by splitting equation \ref{positionEoM}a into 
 
 \begin{subequations}
+\label{slimplecticEqns}
 \begin{align}
 \pi_n &\equiv -\left[\frac{\partial\Lambda_d^n}{\partial q_{n,-}}\right]_{PL} \\
 \pi_{n+1} &\equiv \left[\frac{\partial\Lambda_d^n}{\partial q_{n+1,-}}\right]_{PL} \\ 
@@ -248,11 +255,9 @@ Taking the definition of generalised momenta in equation \ref{GeneralisedMomenta
 \end{align}
 \end{subequations}
 
-which finally produces a set of discretised equations that can be computationally solved for.
+which finally produces a set of discretised equations that can be computationally solved for. By taking initial conditions for $q_0, \pi_0$ the integrator can then forward integrate the system for N iterations whilst preserving (up to a constant error bound) 
 
-
-
-
+Tsang et al. \cite{Tsang_Slimplectic} have developed a \texttt{python} code \texttt{slimplectic} which makes use of the \texttt{SymPy} package to include a computational solver using the slimplectic method as described in equation \ref{slimplecticEqns}. The package takes initial conditions; a value for $r$; a number of timesteps, $N$, for which to iterate; and a lagrangian to determine values for $q_n,\pi_n$ with $n\in\{1,N\}$.
 
 
 \subsection{Loss Functions}
