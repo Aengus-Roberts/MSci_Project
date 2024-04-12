@@ -55,7 +55,16 @@ Loss functions play a crucial role in PINNs often acting as a conduit for incorp
 	\item Physics Information: An encoding of physical laws such as ensuring specific PDE's are satisfied by penalising deviation from governing equations. 
 \end{itemize}
 
-One issue that loss functions face is the requirement of being differentiable with respect to the weights and biases of a network. This often leads to simple regression functions such as mean squared error being selected in order to guarantee this property. A regression function may
+One issue that loss functions face is the requirement of being differentiable with respect to the weights and biases of a network. This often leads to simple regression functions such as mean squared error being selected in order to guarantee this property. A regression function may be paired with a simple physics informed term such as a penalisation of deviation from conservation terms. For example, conservation of mass within fluid dynamics for an ideal fluid can be expressed as 
+\begin{equation}
+\label{FluidConservation}
+	\nabla \cdot\dot q = 0
+\end{equation}
+ 
+so a penalisation term in the loss function could be written as Conservation term $=\Lambda|\nabla \cdot \dot q|^2$ thus penalising deviation from equation \ref{FluidConservation}.
+
+Another more applied issue that loss functions face is coding efficiency restraints. As on of the most called functions within the neural network training process a loss function is constrained to mathematically quick calculations and there often cannot afford to implement longer more involved calculations. 
+
 \subsection{Lagrangian Mechanics}
 Here we provide a brief overview of Lagrangian Mechanics, a formalism of classical mechanics prioritising the energy of a system as its initial reference point. 
 
@@ -268,6 +277,7 @@ which finally produces a set of discretised equations that can be computationall
 Tsang et al. \cite{Tsang_Slimplectic} have developed a \texttt{python} code \texttt{slimplectic} which makes use of the \texttt{SymPy} package to include a computational solver using the slimplectic method as described in equation \ref{slimplecticEqns}. The package takes initial conditions; a value for $r$; a number of timesteps, $N$, for which to iterate; and a lagrangian to determine values for $q_n,\pi_n$ with $n\in\{1,N\}$.
 
 \subsection{Google Jax}
+Google JAX \cite{Jax} is a python machine learning framework developed by Google that collates the properties of Autograd \cite{Autograd} and XLA (Accelerated Linear Algebra) which include just in time (JIT) compilation). Autograd allows for automatic differentiation of both \texttt{python} and \texttt{NumPy} functions, a beneficial property when performing gradient descent during training of neural networks. JIT compilation allows functionally written pieces of python code to be converted from interpreted to compiled code. By JIT compiling code is converted into mathematically more efficient ''black-box" functions which map inputs to outputs in less time. This is especially beneficial for code that is frequently called as it need only be JIT compiled once before the ''black-box" version is  used thereafter.
 
 \section{Method}
 \section{Results}
