@@ -285,11 +285,17 @@ Tsang et al. \cite{Tsang_Slimplectic} have developed a \texttt{python} code \tex
 Here we outline the two pieces of code developed and testing framework to identify strengths and weaknesses with each. 
 
 \subsection{Slimplectic Integrator 2.0}
+\label{SI2.0}
 Using the Google JAX package we have developed an "autodiffable" version of the Slimplectic integrator (hereon referred to as the JAX-based integrator). This follows the generation method outlined in section \ref{Symplectic} which matches that of Tsang et al \cite{Tsang_Slimplectic} but uses the JAX implementations of \texttt{Autograd} and \texttt{NumPy} in place of the \texttt{SymPy} package used in the original version. Similar to the original Slimplectic integrator, the JAX-based integrator takes values for r, the number of timesteps and initial conditions for $q$ and $\pi$ to forward integrate. In place of the \texttt{SymPy} expressions for $L$ and $K$, a python function with arguments $(q,\pi)$ with the form of the Lagrangian is inputted. 
 
-The two integrators are then compared across two examples as outlined below.
+Two examples (sections \ref{DHO,PRD}) are used to compare the SymPy-based and JAX-based Slimplectic Integrators over two metrics. The first of these being the time complexity of the integrator measured by determining $q$ and $\pi$ for a large number of timesteps. The second being the order of the method determined by varying $r$ and observing the time taken to generate values for a fixed number of timesteps.
+%METRICS
+% Time Complexity for large N timesteps
+% Order of the method in fixed time / time taken to generate with order r
+
 
 \subsubsection{Damped Harmonic Oscillator \\}
+\label{DHO}
 Using the format of equation \ref{NonConEulerLagrange}, a one-dimensional damped harmonic oscillator (DHO) has a lagrangian
 
 \begin{equation}
@@ -302,6 +308,7 @@ where $m$ is the mass of the oscillating object, $k$ is the spring constant of t
 We choose a DHO as it allows us to identify non-conservative behaviour being correctly predicted at high levels of accuracy due to its simplicity. 
 
 \subsubsection{Poynting-Robertson Drag \\}
+\label{PRD}
 As with Tsang et al. \cite{Tsang_Slimplectic} we also examine the orbital motion of a small dust particle being acted on by radiation from a solar type star. This particle would experience Poynting-Robertson drag \cite{Poynting-Robertson} which would give the system a conservative Lagrangian of 
 
 \begin{equation}
@@ -321,20 +328,29 @@ The Poynting-Robertson drag manifests itself as the non-conservative term
 
 This example is chosen to highlight the integrators ability to work in multiple dimensions efficiently. 
 
-\subsection{Loss Function and Neural Network}
-The second piece of code is a neural network written using the Keras \cite{Keras} and Tensorflow \cite{TF} frameworks. The network uses a simple, multi-layer LSTM model \cite{LSTM} combined with a novel loss function which implements the JAX-version slimplectic integrator. The neural network is built to identify coefficients of terms within the Lagrangian for Lagrangians of a specific 'family'. A 'family' of Lagrangians is defined to be the set of all Lagrangians with the same terms. For example, the DHO lagrangian in equation \ref{DHOeqn} would be part of the family of Lagrangians with the form 
+\subsection{Neural Network and Loss Function}
+The second piece of code is a neural network written using the Keras \cite{Keras} and Tensorflow \cite{TF} frameworks. The network uses a simple, multi-layer LSTM model \cite{LSTM} combined with a novel loss function which implements the JAX-based slimplectic integrator. The NN is built to identify coefficients of terms within the Lagrangian for Lagrangians of a specific 'family'. A 'family' of Lagrangians is defined to be the set of all Lagrangians with the same terms. For example, the DHO lagrangian in equation \ref{DHOeqn} would be part of the family of Lagrangians with the form 
 
 \begin{equation}
 	\label{DHOFamily}
 	\Lambda = c_1\dot{q}^2 - c_2q^2 + c_3\dot{q}_+q_-
 \end{equation}
 
-where the constant term has been omitted as Lagrangians differing by a constant term will produce the same equations of motion. 
+where the constant term has been omitted as Lagrangians differing by a constant term will produce the same equations of motion. As an input, the NN takes observational data, such as $(q,\pi)$ or $(q,\dot{q})$ at sequential time-steps. The relationship between the input and output here highlights the motivation for creating such a NN. We aim to create a program that has the ability to correctly identify conserved quantities (symmetries) alongside other physical phenomena (e.g. energy decay in damped systems) without knowing any information about the underlying physics governing the system. 
 
+The loss function has the form
+\begin{equation}
+\begin{split}
+		\label{lossfunc}
+	\textrm{loss} = &\left(\sum_{i=0}^N (q_{\textrm{true}}(t_i) - q_{\textrm{pred}}(t_i))^2\right)^{1/2} \\ +  &\left(\sum_{i=0}^N (\dot{q}_{\textrm{true}}(t_i) - \dot{q}_{\textrm{pred}}(t_i))^2\right)^{1/2}
+\end{split}
+\end{equation}
+
+where $q_{\textrm{pred}}, \dot{q}_{\textrm{pred}}$ are $q$ and $\dot q$ values generated by taking the NN's current predictions for the Lagrangian coefficients and passing them through the JAX-based slimplectic integrator. $q_{\textrm{true}}, \dot{q}_{\textrm{true}}$ are the NN input values (i.e. the known observational data). The loss function comprises of $L^2$ norm in the $q$ and $\dot q$ coordinate systems 
+
+We use the examples in section \ref{SI2.0} once again to study the behaviour of the NN. Here we generate a sample dataset from the family of Lagrangians the NN has been trained on. This sample dataset can then be passed into the trained NN to obtain predicted lagrangians. These predicted lagrangians can then be compared via the loss function 
 \section{Results}
-\lipsum
 \section{Discussion}
-\lipsum
 \section{Conclusion}
 \ack
 \section*{References}
