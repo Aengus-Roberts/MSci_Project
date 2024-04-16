@@ -65,6 +65,10 @@ so a penalisation term in the loss function could be written as Conservation ter
 
 Another more applied issue that loss functions face is coding efficiency restraints. As on of the most called functions within the neural network training process a loss function is constrained to mathematically quick calculations and there often cannot afford to implement longer more involved calculations. 
 
+\subsection{Google JAX}
+Google JAX \cite{Jax} is a python machine learning framework developed by Google that collates the properties of Autograd \cite{Autograd} and XLA (Accelerated Linear Algebra) \cite{XLA} which include just in time (JIT) compilation). Autograd allows for automatic differentiation of both \texttt{python} and \texttt{NumPy} functions, a beneficial property when performing gradient descent during training of neural networks. JIT compilation allows functionally written pieces of python code to be converted from interpreted to compiled code. By JIT compiling code is converted into mathematically more efficient ''black-box" functions which map inputs to outputs in less time. This is especially beneficial for code that is frequently called as it need only be JIT compiled once before the ''black-box" version is  used thereafter.
+
+
 \subsection{Lagrangian Mechanics}
 Here we provide a brief overview of Lagrangian Mechanics, a formalism of classical mechanics prioritising the energy of a system as its initial reference point. 
 
@@ -171,7 +175,7 @@ The Hamiltonian (equation \ref{Hamiltonian}) produces first order ordinary diffe
 
 This formulation is often useful for symplectic integrators \cite{SanzSerna} as discussed in section \ref{Symplectic}.
 
-\subsection{Slimplectic Integrator}
+\section{Slimplectic Integrator}
 \label{Symplectic}
 Integrators are another tool within the modern physicists toolbox. Many physics problems have non-analytic solutions and this is where integrators make their appearance. Many integrators exist and are specialised for different applications. The Runge-Kutta method \cite{RungeKutta} is a well known and widely applied group of methods used for a balanced trade off between accuracy and efficiency. RK45 is perhaps paramount of these with an efficient method of finding solutions to problems with stronger than 4th order accuracy. One issue that Runge-Kutta faces however is that of compounding error. Whilst any one term has bounded error when using Runge-Kutta for integration, the total accumulation of error is not bounded causing issues for systems evolved over longer time periods. 
 
@@ -190,7 +194,7 @@ One construction of symplectic integrators is via the means of variational integ
 
 Symplectic integrators are often used to solve Hamiltonian systems numerically. One common approach used for symplectic integrators is splitting methods such as the leapfrog and Verlet \cite{Verlet} methods. These work by splitting the Hamiltonian into smaller, more manageable parts and iteratively solving the system. By splitting the Hamiltonian like this the integrator can approximate solutions whilst preserving important geometric properties (such as the symplectic form, volume or energy) at a global level.
 
-\subsubsection{The "Slimplectic" Integrator \\}
+\subsection{The "Slimplectic" Integrator \\}
 Tsang et al. \cite{Tsang_Slimplectic} have developed a variational integrator, the "Slimplectic" integrator, from the nonconservative action principle \cite{GalleyEtAl}. Starting with equation \ref{NonConEulerLagrange} the action integral $S = \int_{t_i}^{t_f}\Lambda(q_{\pm},\dot{q_{\pm}},t)dt$ is discretised using Galerkin-Gauss-Lobatto (GGL) quadrature \cite{GGL} as shown in figure \ref{GGLDiscretisation}. The GGL quadrature is chosen as it is an even order method and therefore symmetric under time reversal ($t\to-t$). The interval $t\in [t_n, t_{n+1}]$ has $r+2$ quadrature points given by
 
 \begin{equation}
@@ -276,10 +280,57 @@ which finally produces a set of discretised equations that can be computationall
 
 Tsang et al. \cite{Tsang_Slimplectic} have developed a \texttt{python} code \texttt{slimplectic} which makes use of the \texttt{SymPy} package to include a computational solver using the slimplectic method as described in equation \ref{slimplecticEqns}. The package takes initial conditions; a value for $r$; a number of timesteps, $N$, for which to iterate; and a lagrangian to determine values for $q_n,\pi_n$ with $n\in\{1,N\}$.
 
-\subsection{Google JAX}
-Google JAX \cite{Jax} is a python machine learning framework developed by Google that collates the properties of Autograd \cite{Autograd} and XLA (Accelerated Linear Algebra) \cite{XLA} which include just in time (JIT) compilation). Autograd allows for automatic differentiation of both \texttt{python} and \texttt{NumPy} functions, a beneficial property when performing gradient descent during training of neural networks. JIT compilation allows functionally written pieces of python code to be converted from interpreted to compiled code. By JIT compiling code is converted into mathematically more efficient ''black-box" functions which map inputs to outputs in less time. This is especially beneficial for code that is frequently called as it need only be JIT compiled once before the ''black-box" version is  used thereafter.
 
-\section{Method}
+\section{Code and Method}
+Here we outline the two pieces of code developed and testing framework to identify strengths and weaknesses with each. 
+
+\subsection{Slimplectic Integrator 2.0}
+Using the Google JAX package we have developed an "autodiffable" version of the Slimplectic integrator (hereon referred to as the JAX-based integrator). This follows the generation method outlined in section \ref{Symplectic} which matches that of Tsang et al \cite{Tsang_Slimplectic} but uses the JAX implementations of \texttt{Autograd} and \texttt{NumPy} in place of the \texttt{SymPy} package used in the original version. Similar to the original Slimplectic integrator, the JAX-based integrator takes values for r, the number of timesteps and initial conditions for $q$ and $\pi$ to forward integrate. In place of the \texttt{SymPy} expressions for $L$ and $K$, a python function with arguments $(q,\pi)$ with the form of the Lagrangian is inputted. 
+
+The two integrators are then compared across two examples as outlined below.
+
+\subsubsection{Damped Harmonic Oscillator \\}
+Using the format of equation \ref{NonConEulerLagrange}, a one-dimensional damped harmonic oscillator (DHO) has a lagrangian
+
+\begin{equation}
+\label{DHOeqn}
+	\Lambda(\bold{q_{\pm},\dot{q}_{\pm}},t) = \frac{1}{2}m\dot{q}^2 - \frac{1}{2}kq^2 - c\dot{q}_+q_-
+\end{equation}
+
+where $m$ is the mass of the oscillating object, $k$ is the spring constant of the oscillator, and $c$ is a damping constant.  
+
+We choose a DHO as it allows us to identify non-conservative behaviour being correctly predicted at high levels of accuracy due to its simplicity. 
+
+\subsubsection{Poynting-Robertson Drag \\}
+As with Tsang et al. \cite{Tsang_Slimplectic} we also examine the orbital motion of a small dust particle being acted on by radiation from a solar type star. This particle would experience Poynting-Robertson drag \cite{Poynting-Robertson} which would give the system a conservative Lagrangian of 
+
+\begin{equation}
+	L = \frac{1}{2}m\dot{\bold{q}}^2 + (1-\beta)\frac{GM_\odot m}{|\bold{q}|}
+\end{equation} 
+with $\bold{q}$ the particles position and $m$ the particles mass. The $\beta$ term represents a dimensionless quantity which is the ratio between forces due to radiation pressure and gravity given by 
+\begin{equation}
+	\beta\equiv\frac{3L_\odot}{8\pi c\rho GM_\odot d}.
+\end{equation}
+Here $\rho$ and $d$ are the density and diameter of the dust particle and $L_\odot$ and $M_\odot$ are the solar luminosity and mass.
+
+The Poynting-Robertson drag manifests itself as the non-conservative term
+
+\begin{equation}
+	K = \frac{\beta GM_\odot m}{c\bold{q}_+^2}\left[\bold{\dot{q}}_+\cdot \bold{q}_- + \frac{1}{\bold{q}_+^2}(\bold{\dot{q}}_+\cdot\bold{q}_+)(\bold{q}_+\cdot\bold{q}_-)\right].
+\end{equation}
+
+This example is chosen to highlight the integrators ability to work in multiple dimensions efficiently. 
+
+\subsection{Loss Function and Neural Network}
+The second piece of code is a neural network written using the Keras \cite{Keras} and Tensorflow \cite{TF} frameworks. The network uses a simple, multi-layer LSTM model \cite{LSTM} combined with a novel loss function which implements the JAX-version slimplectic integrator. The neural network is built to identify coefficients of terms within the Lagrangian for Lagrangians of a specific 'family'. A 'family' of Lagrangians is defined to be the set of all Lagrangians with the same terms. For example, the DHO lagrangian in equation \ref{DHOeqn} would be part of the family of Lagrangians with the form 
+
+\begin{equation}
+	\label{DHOFamily}
+	\Lambda = c_1\dot{q}^2 - c_2q^2 + c_3\dot{q}_+q_-
+\end{equation}
+
+where the constant term has been omitted as Lagrangians differing by a constant term will produce the same equations of motion. 
+
 \section{Results}
 \lipsum
 \section{Discussion}
