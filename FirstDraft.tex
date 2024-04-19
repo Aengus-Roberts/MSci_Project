@@ -286,7 +286,7 @@ Here we outline the two pieces of code developed and testing framework to identi
 
 \subsection{Slimplectic Integrator 2.0}
 \label{SI2.0}
-Using the Google JAX package we have developed an "autodiffable" version of the Slimplectic integrator (hereon referred to as the JAX-based integrator). This follows the generation method outlined in section \ref{Symplectic} which matches that of Tsang et al \cite{Tsang_Slimplectic} but uses the JAX implementations of \texttt{Autograd} and \texttt{NumPy} in place of the \texttt{SymPy} package used in the original version. Similar to the original Slimplectic integrator, the JAX-based integrator takes values for r, the number of timesteps and initial conditions for $q$ and $\pi$ to forward integrate. In place of the \texttt{SymPy} expressions for $L$ and $K$, a python function with arguments $(q,\pi)$ with the form of the Lagrangian is inputted. 
+Using the Google JAX package we have developed an "autodiffable" version of the Slimplectic integrator (hereon referred to as the JAX-based integrator). This follows the generation method outlined in section \ref{Symplectic} which matches that of Tsang et al \cite{Tsang_Slimplectic} but uses the JAX implementations of \texttt{Autograd} and \texttt{NumPy} in place of the \texttt{SymPy} package used in the original version. Similar to the original Slimplectic integrator, the JAX-based integrator takes values for r, the number of timesteps along with $\Delta t$ and initial conditions for $q$ and $\pi$ to forward integrate. In place of the \texttt{SymPy} expressions for $L$ and $K$, a python function with arguments $(q,\pi)$ with the form of the Lagrangian is inputted. 
 
 Two examples (sections \ref{DHO}, \ref{PRD}) are used to compare the SymPy-based and JAX-based Slimplectic Integrators over two metrics. The first of these being the time complexity of the integrator measured by determining $q$ and $\pi$ for a large number of timesteps. The second being the order of the method, determined by varying $r$ and observing the time taken to generate values for a fixed number of timesteps.
 %METRICS
@@ -326,14 +326,14 @@ The Poynting-Robertson drag manifests itself as the non-conservative term
 	K = \frac{\beta GM_\odot m}{c\bold{q}_+^2}\left[\bold{\dot{q}}_+\cdot \bold{q}_- + \frac{1}{\bold{q}_+^2}(\bold{\dot{q}}_+\cdot\bold{q}_+)(\bold{q}_+\cdot\bold{q}_-)\right].
 \end{equation}
 
-This example is chosen to highlight the integrators ability to work in multiple dimensions efficiently. 
+This example is chosen due to its use in Tsang et al. \cite{Tsang_Slimplectic} to compare the Runge-Kutta 4th order method.
 
 \subsection{Neural Network and Loss Function}
 The second piece of code is a neural network written using the Keras \cite{Keras} and Tensorflow \cite{TF} frameworks. The network uses a simple, multi-layer LSTM model \cite{LSTM} combined with a novel loss function which implements the JAX-based slimplectic integrator. The NN is built to identify coefficients of terms within the Lagrangian for Lagrangians of a specific 'family'. A 'family' of Lagrangians is defined to be the set of all Lagrangians with the same terms. For example, the DHO lagrangian in equation \ref{DHOeqn} would be part of the family of Lagrangians with the form 
 
 \begin{equation}
 	\label{DHOFamily}
-	\Lambda = c_1\dot{q}^2 - c_2q^2 + c_3\dot{q}_+q_-
+	\Lambda = c_1\dot{q}^2 - c_2q^2 - c_3\dot{q}_+q_-
 \end{equation}
 
 where the constant term has been omitted as Lagrangians differing by a constant term will produce the same equations of motion. As an input, the NN takes observational data, such as $(q,\pi)$ or $(q,\dot{q})$ at sequential time-steps. The relationship between the input and output here highlights the motivation for creating such a NN. We aim to create a program that has the ability to correctly identify conserved quantities (symmetries) alongside other physical phenomena (e.g. energy decay in damped systems) without knowing any information about the underlying physics governing the system. 
@@ -351,6 +351,24 @@ where $q_{\textrm{pred}}, \dot{q}_{\textrm{pred}}$ are $q$ and $\dot q$ values g
 We use the examples in section \ref{SI2.0} once again to study the behaviour of the NN. Here we generate a sample dataset from the family of Lagrangians the NN has been trained on. This sample dataset can then be passed into the trained NN to obtain predicted lagrangians. These predicted lagrangians can then be compared via the loss function and statistical analysis in order to identify whether or not the neural network has accurately predicted lagrangians that governs the system and thus identified the equations of motion.
 
 \section{Results}
+% RESULTS TO REPORT
+% SLIMPLECTIC INTEGRATOR
+%	FIXED time value for r=2, dt=0.1, N to 1e6 then linear increase - USE DHO
+%	Order up to r=84 works in almost fixed time (except for r\in(7,9)) - USE PRD
+%	Error is still bounded
+% NEURAL NETWORK
+% 	Loss Graph for training on DHO
+%	Predicted vs Actual Trajectories for Q and \pi
+
+We first focus on the JAX-based slimplectic integrator and look to its behaviour for large numbers of iterations. Figure \ref{fig:nplot} compares the time taken to forward integrate a DHO system for N iterations with $r=2, \Delta t = 0.1$ for both the original and JAX-based integrators. The JAX-based integrator performs this task in constant time for $N<10^6$. This is due to the JIT compiled program performing vectorised calculations which within the maximum size for the vectors will run in constant time. This therefore means that the exact value at which the total integration time swaps from the constant to linear domain is dependant on the specific family of lagrangians. A lagrangian defined by 4 coefficients will differ from one defined by 12 coefficients. 
+
+\begin{figure}
+	\label{fig:nplot}
+	\centering
+	\includegraphics[width=\columnwidth]{NPlot.jpg}
+	\caption{Time taken to integrate a simple DHO system for N timestep. The system has the parameters $r=4, \Delta t=0.01$s and has a lagrangian with the same form as equation \ref{DHOFamily} with $c_1=c_2=c_3=1$. Note that the number of iterations, N, is reported against a logarithmic scale and therefore the exponential growth seen for $N>10^6$ is a linear relationship between N and total integration time for $N$ in this region.}
+\end{figure}
+
 \section{Discussion}
 \section{Conclusion}
 \ack
