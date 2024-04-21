@@ -378,14 +378,13 @@ The order of the Slimplectic integrator,\cite{Tsang_Slimplectic}, is $r+2$ and a
 	|\textrm{Err}(\Delta t)| \approx a(\Delta t)^{r+2}.
 \end{equation}
 
-We can therefore increase the accuracy of the integrator by increasing $r$. Figure \ref{rplot} shows the effect of varying this for a Poynting-Robinson Drag system.
+We can therefore increase the accuracy of the integrator by increasing $r$. Figure \ref{rplot} shows the effect of varying this for a Poynting-Robinson Drag system. The compile time dominates the JAX-based integrators total integration time leading to an effective fixed cost computation for r$\sim10^1$. The JAX-based integrator cannot currently discretise order $>85$ due to numerical instability in the Legendre polynomial root finding used in \ref{timeDiscretisation}. 
 
-\todo{Finish this section off, talk to Josh and Gen data}
 
 \begin{figure}
 	\label{rplot}
-	\includegraphics[width=\columnwidth]{pingu.jpg}
-	\caption{ee}
+	\includegraphics[width=\columnwidth]{RPlot.jpg}
+	\caption{A comparison of the order of the integrator and the time taken to integrate the system. Time is split by basis of the model (original vs JAX) and by setup/computation calculations. Here we observe the fixed compiling cost once again dominating the total time for the JAX-based integrator effectively providing a fixed computation time regardless of integrator order. Times for order $>25$ were not recorded for the original integrator due to extreme computation time.}
 \end{figure}
 
 \subsection{Bounding the Integrator Error}
@@ -400,10 +399,25 @@ As with the original slimplectic integrator we investigate the fractional energy
 \subsection{Approximating DHO Functions}
 We now move to the NN which was trained on a dataset of $5.0\times10^5$ randomly generated non-conservative lagrangians within the DHO family given by equation \ref{DHOFamily}. For each generated set of lagrangian coefficients, $\{c_1,c_2,c_3\}$, the conditions $c_1 > 0$ and $c_2,c_3 \geq 0$ were applied. Approximately $5\%$ of $c_2$ and $c_3$ values were randomly set to 0 such that the training dataset was guaranteed to have systems with $V,K = 0$. Negative values were discouraged through the implementation of an additional term in the loss function penalising coefficient values $ < -0.1$. This limit was chosen as to not discourage the neural network from choosing zero valued coefficients whilst still discouraging non-physical systems. 
 
-Training of the model was temperamental and often susceptible to random permutations of the dataset causing diverging loss values which eventually broke models. By increasing batch sizes and introducing loss caps this was eventually remedied to produce a model that identifies trends within the data
-\subsection{Differing Models}
+Training of the model was temperamental and often susceptible to random permutations of the dataset causing diverging loss values which eventually broke models. By increasing batch sizes and introducing loss caps this was eventually remedied to produce a model that identifies trends within the data. Although not able to perfectly reproduce equations of motion as yet, figure \ref{model_comp} shows promising progress for the NN. The model produced a RMS error value of $\pm0.050$ in q and $\pm0.10$ in $\pi$. The loss function was also varied during the training process, initially weighting more in favour of the RMS error in q to compensate for the fact that a majority of systems produced larger $\pi$-values than q-values. 
 
+Biasing the loss function only use RMS error in $\pi$ produced results of interest, initially reducing loss to $10^{-4}$, a before unseen value. However, this was accomplished by the model choosing $c_1\approx c_2\approx c_3$ and then varying these values by small quantities to appease the loss function, thereby not producing physically accurate predictions. 
 
+Another result of interest was the models ability to train to an accuracy greater than that used to produce figure \ref{model_comp}. The training process frequently approached a validation loss $\approx 0.20$ but often struggled to become more accurate than this with the loss soon-after ``blowing up", possibly due to the complexity of the loss function below this resolution. In figure \ref{model_comp} we can see the phase of q has been matched but the predicted amplitude is smaller than the true amplitude. Remedying this would require scaling of both potentials V and K by the same quantity. If one of these parameters were to change but not the other the model would see a ``de-syncing" of the phase thereby increasing loss. Therefore the complexity in the loss function here may be down to the requirement to scale both coefficients equally. This issue was identified after exploring gradient descent in the embedding space to study the loss function. Figure \ref{lossSlices} identifies this behaviour by identifying the behaviour of the loss function about the global minima, i.e. the true embedding of the function.
+
+\begin{figure*}
+	\centering
+	\label{model_comp}
+	\includegraphics[width=\textwidth]{EnergyPlot.png}
+	\caption{ee}
+\end{figure*}
+
+\begin{figure}
+	\centering
+	\label{lossSlices}
+	\includegraphics[width=\columnwidth]{EnergyPlot.png}
+	\caption{ee}
+\end{figure}
 
 \section{Discussion}
 \section{Conclusion}
