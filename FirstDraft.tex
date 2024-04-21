@@ -359,15 +359,51 @@ We use the examples in section \ref{SI2.0} once again to study the behaviour of 
 % NEURAL NETWORK
 % 	Loss Graph for training on DHO
 %	Predicted vs Actual Trajectories for Q and \pi
+\subsection{Integrating for N timesteps}
+We first focus on the JAX-based slimplectic integrator and look to its behaviour for large numbers of iterations. Figure \ref{nplot} compares the time taken to forward integrate a DHO system for N iterations with $r=2, \Delta t = 0.1$ for both the original and JAX-based integrators.The JAX-based integrator performs this task in approximately constant time for $N<10^6$. This is due to the fixed time cost of JIT compiling the system with the integration time being linearly proportional to $N$, the number of time-steps. The total integration time for the integrator can therefore be seen as $t_{\textrm{tot}} = t_{\textrm{comp}} + t_{\textrm{int}}$. For $N<10^6$ we have $t_{\textrm{comp}} \gg t_{\textrm{int}}$ which exhibits itself as approximately constant time. For $N > 10^6$ we have $t_{\textrm{compile}} \ll t_{\textrm{int}}$ which produces the observed linear growth in $t_{\textrm{tot}}$.
+Note that the exact value at which $t_{\textrm{tot}}$ transitions from the constant to linear domain is dependant on the specific family of lagrangians. A lagrangian defined by 4 coefficients will differ from one defined by 12 coefficients due to the increased complexity in the mathematical calculations performed.
 
-We first focus on the JAX-based slimplectic integrator and look to its behaviour for large numbers of iterations. Figure \ref{fig:nplot} compares the time taken to forward integrate a DHO system for N iterations with $r=2, \Delta t = 0.1$ for both the original and JAX-based integrators. The JAX-based integrator performs this task in constant time for $N<10^6$. This is due to the JIT compiled program performing vectorised calculations which within the maximum size for the vectors will run in constant time. This therefore means that the exact value at which the total integration time swaps from the constant to linear domain is dependant on the specific family of lagrangians. A lagrangian defined by 4 coefficients will differ from one defined by 12 coefficients. 
+We observe that the original slimplectic integrator performs integration for all values of $N$ in a manner such that $t_{\textrm{tot}} \propto N$. For $N<10^2$ we observe that the original integrator performs the integrations quicker than the JAX-based version due to the lack of compile time. We observe that for all values of $N$, $t_{\textrm{int,original}} \propto 10^2\times t_{\textrm{int,JAX}}$ which for large values of $N$ represents an hundred-fold increase in the computation speed of the JAX-based version when compared to the original.
 
 \begin{figure}
-	\label{fig:nplot}
+	\label{nplot}
 	\centering
 	\includegraphics[width=\columnwidth]{NPlot.jpg}
 	\caption{Time taken to integrate a simple DHO system for N timestep. The system has the parameters $r=4, \Delta t=0.01$s and has a lagrangian with the same form as equation \ref{DHOFamily} with $c_1=c_2=c_3=1$. Note that the number of iterations, N, is reported against a logarithmic scale and therefore the exponential growth seen for $N>10^6$ is a linear relationship between N and total integration time for $N$ in this region.}
 \end{figure}
+
+\subsection{Changing the order of the Integrator}
+The order of the Slimplectic integrator,\cite{Tsang_Slimplectic}, is $r+2$ and allows us to approximate the error in the integrators predictions as
+\begin{equation}
+	|\textrm{Err}(\Delta t)| \approx a(\Delta t)^{r+2}.
+\end{equation}
+
+We can therefore increase the accuracy of the integrator by increasing $r$. Figure \ref{rplot} shows the effect of varying this for a Poynting-Robinson Drag system.
+
+\todo{Finish this section off, talk to Josh and Gen data}
+
+\begin{figure}
+	\label{rplot}
+	\includegraphics[width=\columnwidth]{pingu.jpg}
+	\caption{ee}
+\end{figure}
+
+\subsection{Bounding the Integrator Error}
+As with the original slimplectic integrator we investigate the fractional energy error relative to the analytic solutions energy. Here we observe almost identical behaviour to the original integrator. Mirroring figure 2 in Tsang et al. \cite{Tsang_Slimplectic} we compare the fractional energy error with the system evolution time for the JAX-based integrator and Runge-Kutta 2 and 4 methods. This is shown in figure \cite{EnergyPlot} and almost directly mirrors the original slimplectic integrators version of this figure. 
+
+\begin{figure}
+	\label{EnergyPlot}
+	\includegraphics[width=\columnwidth]{EnergyPlot.png}
+	\caption{ee}
+\end{figure}
+
+\subsection{Approximating DHO Functions}
+We now move to the NN which was trained on a dataset of $5.0\times10^5$ randomly generated non-conservative lagrangians within the DHO family given by equation \ref{DHOFamily}. For each generated set of lagrangian coefficients, $\{c_1,c_2,c_3\}$, the conditions $c_1 > 0$ and $c_2,c_3 \geq 0$ were applied. Approximately $5\%$ of $c_2$ and $c_3$ values were randomly set to 0 such that the training dataset was guaranteed to have systems with $V,K = 0$. Negative values were discouraged through the implementation of an additional term in the loss function penalising coefficient values $ < -0.1$. This limit was chosen as to not discourage the neural network from choosing zero valued coefficients whilst still discouraging non-physical systems. 
+
+Training of the model was temperamental and often susceptible to random permutations of the dataset causing diverging loss values which eventually broke models. By increasing batch sizes and introducing loss caps this was eventually remedied to produce a model that identifies trends within the data
+\subsection{Differing Models}
+
+
 
 \section{Discussion}
 \section{Conclusion}
