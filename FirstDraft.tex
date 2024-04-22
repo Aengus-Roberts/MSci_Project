@@ -139,14 +139,14 @@ Galley, Tsang and Stein \cite{GalleyEtAl} propose a generalisation of Noether's 
 	\Lambda = \mathcal{L}(\bold{q_1,\dot q_1},t) - \mathcal{L}(\bold{q_2,\dot q_2},t) + K(\bold{q_1,\dot q_1,q_2,\dot q_2},t)
 \end{equation}
 
-where $\mathcal{L}$ is the lagrangian as defined previously and $K$ is an additional coupling term physically similar to a non-conservative potential. The generalised coordinates are doubled, as explained by Galley \cite{Galley}, from $\bold{q,\dot q}$ to $\bold{q_1,\dot q_1, q_2, \dot q_2}$. This allows for the conversion of Hamiltons principle from a boundary value problem (i.e. ``minimise the action passing through given initial and final values") to an initial value problem involving twice the degrees of freedom. These new generalised coordinates must satisfy $q_1(t) = q_2(t)$ and $\dot q_1(t) = \dot q_2(t)$ for $t \in \{t_i, t_f\}$. The cartoon in figure \ref{doubledCoords} depicts this doubling of coordinates to create a free end point.
+where $\mathcal{L}$ is the lagrangian as defined previously and $K$ is an additional coupling term physically similar to a non-conservative potential. The generalised coordinates are doubled, as explained by Galley \cite{Galley}, from $\bold{q,\dot q}$ to $\bold{q_1,\dot q_1, q_2, \dot q_2}$. This doubling of coordinates allows for a subtle but important change. The Euler-Lagrange equation \ref{Eul-Lag} provides an initial value problem (differential equation + initial conditions) whereas Hamiltons principle provides a boundary value problem in time (i.e. ``minimise the action passing through given initial and final time values"). This is a subtle difference and in conservative systems does not pose an issue. However, in non-conservative systems this breaks down due to such non-conservative behaviours as history dependance and non-linearity. The doubling of coordinates remedies this problem by converting the problem to one of an initial value problem with twice the degrees of freedom and two initial values $q_{i,1}$ and $q_{i,2}$. This process allows the creation of a free end point $q_f$. These new generalised coordinates must satisfy $q_1(t) = q_2(t)$ and $\dot q_1(t) = \dot q_2(t)$ for $t \in \{t_i, t_f\}$. The cartoon in figure \ref{doubledCoords} depicts this doubling of coordinates to create a free end point.
 
 Galley \cite{Galley} also shows that $K$ must be antisymmetric in swapping the indices and therefore must also vanish for $\bold q_1 =\bold q_2,\bold{\dot q_1} =\bold{\dot q_2}$.
 
 \begin{figure}
 	\label{doubledCoords}
 	\centering
-	\includegraphics[width=0.9\columnwidth]{Pingu.jpg}
+	\includegraphics[width=\columnwidth]{Endpoints.pdf}
 	\caption{A cartoon depicting the doubling of coordinates posited by Galley \cite{Galley}. (a) shows a conservative system where initial and end points are fixed such that the solid path between them minimises the Action and dashed paths represent paths that do not minimise the Action. (b) shows a system with doubled coordinates. the point on the $t=t_f$ line is now free to vary but both the $q_{1,i}$ and $q_{2,i}$ points are fixed on the $t=t_i$ line. Here the $q_f$ point varies in order to globally minimise both paths. The physical limit occurs as $q_{2,i}\to q_{1,i}$ and, assuming the same system is modelled in both (a) and (b), rediscovers the path shown in (a).}
 \end{figure}
 
@@ -177,7 +177,7 @@ This formulation is often useful for symplectic integrators \cite{SanzSerna} as 
 
 \section{Slimplectic Integrator}
 \label{Symplectic}
-Integrators are another tool within the modern physicists toolbox. Many physics problems have non-analytic solutions and this is where integrators make their appearance. Many integrators exist and are specialised for different applications. The Runge-Kutta method \cite{RungeKutta} is a well known and widely applied group of methods used for a balanced trade off between accuracy and efficiency. RK45 is perhaps paramount of these with an efficient method of finding solutions to problems with stronger than 4th order accuracy. One issue that Runge-Kutta faces however is that of compounding error. Whilst any one term has bounded error when using Runge-Kutta for integration, the total accumulation of error is not bounded causing issues for systems evolved over longer time periods. 
+Integrators are another tool within the modern physicists toolbox. Many physics problems have non-analytic solutions and this is where integrators make their appearance. Many integrators exist and are specialised for different applications. The Runge-Kutta (RKn) method \cite{RungeKutta} is a well known and widely applied group of methods used for a balanced trade off between accuracy and efficiency. RK45 is perhaps paramount of these with an efficient method of finding solutions to problems with stronger than 4th order accuracy. One issue that Runge-Kutta faces however is that of compounding error. Whilst any one term has bounded error when using Runge-Kutta for integration, the total accumulation of error is not bounded causing issues for systems evolved over longer time periods. 
 
 A remedy to this is another class of integrators called Symplectic integrators. These preserve (up to computational rounding) the differential 2-form called the symplectic form. Preservation of the symplectic form is analogous to preservation of certain physical constants. Due to this preservation the symplectic integrator is often used in integration of systems over long time scales. This is particularly common in orbital mechanics \cite{WISDOM, ReinTamayo} but also finds uses in statistical algorithms \cite{Neal_MCMC}.
 
@@ -187,10 +187,9 @@ One construction of symplectic integrators is via the means of variational integ
 \begin{figure}
 	\label{VariationalIntegrator}
 	\centering
-	\includegraphics[width=0.9\columnwidth]{Pingu.jpg}
+	\includegraphics[width=\columnwidth]{Variational.pdf}
 	\caption{The difference between discretising a standard integrator and a variational integrator. In discretising a standard integrator the discretisation acts directly on the EoM's. However, a variational integrator discretises the action before determining the discretised EoM's.}
 \end{figure}
-\todo{fix figure}
 
 Symplectic integrators are often used to solve Hamiltonian systems numerically. One common approach used for symplectic integrators is splitting methods such as the leapfrog and Verlet \cite{Verlet} methods. These work by splitting the Hamiltonian into smaller, more manageable parts and iteratively solving the system. By splitting the Hamiltonian like this the integrator can approximate solutions whilst preserving important geometric properties (such as the symplectic form, volume or energy) at a global level.
 
@@ -204,11 +203,10 @@ Tsang et al. \cite{Tsang_Slimplectic} have developed a variational integrator, t
 
 where $\Delta t = (t_{n+1}-t_n)/2$, $x_0 \equiv -1, x_{r+1} \equiv 1$ and $x_i$ is the $i$th root of $dP_{r+1}/dx$, the derivative of the $(r+1)$th Legendre polynomial $P_{r+1}(x)$. 
 
-\todo{Replace Image}
 \begin{figure}
 	\centering
 	\label{GGLDiscretisation}
-	\includegraphics[width = 0.9\columnwidth]{Pingu.jpg}
+	\includegraphics[width =\columnwidth]{cartoon.jpg}
 	\caption{The discretisation of time used within the GGL method. This is used to approximate the action to N timesteps between $t_i$ and $t_f$. Between $t_n$ and $t_{n+1}$ the quadrature discretises $r$ times as according to equation \ref{timeDiscretisation}.}
 \end{figure}
 
@@ -393,7 +391,7 @@ As with the original slimplectic integrator we investigate the fractional energy
 \begin{figure}
 	\label{EnergyPlot}
 	\includegraphics[width=\columnwidth]{EnergyPlot.png}
-	\caption{ee}
+	\caption{The energy error as a fraction of the analytic solution for the energy at specified times. As with the original slimplectic integrator we observe initially roughly equivalent energy errors between RKn and a slimplectic integrator of order n. However for long time periods this diverges with the error in RK increasing whilst the error in the slimplectic integrator remains bounded.}
 \end{figure}
 
 \subsection{Approximating DHO Functions}
@@ -403,23 +401,24 @@ Training of the model was temperamental and often susceptible to random permutat
 
 Biasing the loss function only use RMS error in $\pi$ produced results of interest, initially reducing loss to $10^{-4}$, a before unseen value. However, this was accomplished by the model choosing $c_1\approx c_2\approx c_3$ and then varying these values by small quantities to appease the loss function, thereby not producing physically accurate predictions. 
 
-Another result of interest was the models ability to train to an accuracy greater than that used to produce figure \ref{model_comp}. The training process frequently approached a validation loss $\approx 0.20$ but often struggled to become more accurate than this with the loss soon-after ``blowing up", possibly due to the complexity of the loss function below this resolution. In figure \ref{model_comp} we can see the phase of q has been matched but the predicted amplitude is smaller than the true amplitude. Remedying this would require scaling of both potentials V and K by the same quantity. If one of these parameters were to change but not the other the model would see a ``de-syncing" of the phase thereby increasing loss. Therefore the complexity in the loss function here may be down to the requirement to scale both coefficients equally. This issue was identified after exploring gradient descent in the embedding space to study the loss function. Figure \ref{lossSlices} identifies this behaviour by identifying the behaviour of the loss function about the global minima, i.e. the true embedding of the function.
+Another result of interest was the models ability to train to an accuracy greater than that used to produce figure \ref{model_comp}. The training process frequently approached a validation loss $\approx 0.20$ but often struggled to become more accurate than this with the loss soon-after ``blowing up", possibly due to the complexity of the loss function below this resolution. In figure \ref{model_comp} we can see the phase of q has been matched but the predicted amplitude is smaller than the true amplitude. Remedying this would require scaling of both potentials V and K by the same quantity. If one of these parameters were to change but not the other the model would see a ``de-syncing" of the phase thereby increasing loss. Therefore the complexity in the loss function here may be down to the requirement to scale both coefficients equally. This issue was identified after exploring gradient descent in the embedding space to study the loss function. Figure \ref{lossSlices} identifies this behaviour by observing the behaviour of the loss function about the global minima, i.e. the true embedding of the function.
 
 \begin{figure*}
 	\centering
 	\label{model_comp}
-	\includegraphics[width=\textwidth]{EnergyPlot.png}
-	\caption{ee}
+	\includegraphics[width=\textwidth]{modelComp.jpg}
+	\caption{Particle motion as predicted by the Neural Network when trained on a dataset of DHO systems. The true coefficient embedding was $\{c_1=2,c_2=4,c_3=1\}$ and the predicted embedding was$\{c_1=6.88,c_2=14.19,c_3=5.46\}$. Both embeddings were then forward integrated 40 timesteps to produce these figures. We note the high level of correspondence in the $\pi$ value whilst the $q$ value differs by a matter of amplitude, a common issue with the neural network.}
 \end{figure*}
 
 \begin{figure}
 	\centering
 	\label{lossSlices}
-	\includegraphics[width=\columnwidth]{EnergyPlot.png}
+	\includegraphics[width=\columnwidth]{pingu.jpg}
 	\caption{ee}
 \end{figure}
 
 \section{Discussion}
+The JAX-based integrator's fixed JIT compile cost allows for the application of the integrator to m
 \section{Conclusion}
 \ack
 I would like to thank my project partner Joshua Coles for his indispensable coding abilities, ideas and overall support throughout this project. Without him I would still probably be stuck trying to set up the correct python environment. I would also like to thank my project supervisor Dr David Tsang. His advice and mentorship have been invaluable and I have very much enjoyed our often wandering discussions during project meetings. 
