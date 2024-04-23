@@ -3,11 +3,12 @@
 
 \begin{document}
 \ioptwocol[{
-\title[A lagrangian mechanics oriented approach to neural networks]{A lagrangian mechanics oriented approach to neural networks}
+\title[A Lagrangian mechanics oriented approach to neural networks]{A Lagrangian mechanics oriented approach to neural networks}
 \author{A S Roberts}
 \address{Department of Physics, University of Bath, Claverton Down, Bath BA2 7AY, UK}
 \begin{abstract}
-\lipsum[1]
+The slimplectic integrator developed by Tsang et al. \cite{Tsang_Slimplectic} provided a new type of numerical integrator applicable to general non-conservative systems by applying the principle of stationary non-conservative action. In this paper, we develop a new implementation of this integrator built using the Google JAX framework capable of integrating complex systems for up to $N=10^6$ timesteps at orders of integration $<40$. The JAX-based integrator makes use of JAX's just-in-time (JIT) compilation to produce a one-time compilation time of $\sim 3s$ before almost instantaneous integration of systems.
+We also develop the foundation for a neural network capable of identifying Lagrangians from given observational motion data $(q,\pi)$, making unique use of the low-time cost integrator within neural networks loss function to produce rapid training speeds and a generalised scaleable physics-informed neural network. The neural network, when trained on damped harmonic oscillators, could predict Lagrangians that produce $q$ values accurate to $\pm 0.010$ and $\pi$ values accurate to $\pm 0.10$ for a majority of damped harmonic oscillator systems.
 \end{abstract}
 }]
 % Four main areas of focus:
@@ -30,11 +31,11 @@
 % 4. LMNN
 \section{Introduction}
 \subsection{Neural Networks in Physics}
-Machine learning has become the latest addition to the modern physicists toolkit with a broad range of applications from deep learning for imaging in medical physics \cite{MedPhysDL} to large scale data analysis in astrophysics \cite{astroML}. Machine learning and often neural networks are allowing physicists to tackle problems which were previously intractable due to the size and scale of the computational required. To understand how this tool can be used one must first understand how the tool works.
+Machine learning has become the latest addition to the modern physicist's toolkit with a broad range of applications, from deep learning for imaging in medical physics \cite{MedPhysDL} to large-scale data analysis in astrophysics \cite{astroML}. Machine learning and neural networks  often allow physicists to tackle problems that were previously intractable due to the size and scale of the computational required. To understand how this tool can be used one must first understand how the tool works.
 
-Neural networks are the most common form of machine learning and work by finding a generalised non-linear function (the neural network) between the input and output spaces. The input space is the space of data in which patterns aim to be discovered. For medical imaging this might be pixel values for a certain size image or in astrophysics it may be a range of luminosity values attributed to certain wavelengths of light. The output space is similar, a space of possible outputs such as possible classifications of an astrophysical object with respective confidence levels.
+Neural networks are the most common form of machine learning and work by finding a generalised non-linear function (the neural network) between the input and output spaces. The input space is the space of data in which patterns aim to be discovered. For medical imaging, this might be pixel values for a certain size image, or in astrophysics, it may be a range of luminosity values attributed to certain wavelengths of light. The output space is similar, a space of possible outputs such as possible classifications of an astrophysical object with respective confidence levels.
 
- One of the main draws of neural networks is the ability to apply the function to any object in the input space, even if previously unseen. The neural network can be seen as a connected graph where each node and connection has a weighting (weights and biases respectively). To obtain a function that can accurately predict an outcome for any element of the input space the neural network has to be trained. This training involves taking a known subset of the input and output spaces called the training data set along with a loss function $f_{\mathrm{loss}}$. The loss function compares the neural networks calculated outputs with the known (true) outputs in the training data. Starting with a randomly initialised neural network (randomised weights and biases) the following process can be repeated to slowly optimise the network:
+ One of the main draws of neural networks is the ability to apply the function to any object in the input space, even if previously unseen. The neural network can be seen as a connected graph where each node and connection has a weighting (weights and biases, respectively). The neural network has to be trained to obtain a function that can accurately predict an outcome for any element of the input space. This training involves taking a known subset of the input and output spaces called the training data set along with a loss function $f_{\mathrm{loss}}$. The loss function compares the neural networks calculated outputs with the known (true) outputs in the training data. Starting with a randomly initialised neural network (randomised weights and biases) the following process can be repeated to slowly optimise the network slowly:
  
  \begin{enumerate}
  	\item Pass an element of the training data through the neural network
@@ -44,35 +45,35 @@ Neural networks are the most common form of machine learning and work by finding
  \end{enumerate}
  
 By repeating this process local minima of the loss function can be found thereby optimising the neural network. 
-Ideally, a global minima would be found but this is not guaranteed by the method outlined above. Optimisation algorithms such as Adaptive Moment Estimation (ADAM) optimiser \cite{ADAM} can be implemented in order to increase these chances by varying the size of the updates made when taking the gradient of the loss function.
+Ideally, a global minima would be found but this is not guaranteed by the method outlined above. Optimisation algorithms such as Adaptive Moment Estimation (ADAM) optimiser \cite{ADAM} can be implemented to increase these chances by varying the size of the updates made when taking the gradient of the loss function.
 
-With the ability to identify possibly unseen patterns in data, neural networks are an ideal tool for physicists. One area of neural network development related to this is that of physics informed neural networks (PINN's). These are neural networks that have been given a priori knowledge such as basic physical laws. This knowledge can be encoded into the model in a multitude of ways. Physics informed layers of the neural network are one such encoding such as layers that enforce conservation laws for fluid dynamics. Another encoding is via loss function formulation where the loss function incorporates terms derived from the governing physics equations. These terms will act to penalise the model for deviation from known physical laws. 
+With the ability to identify possibly unseen patterns in data, neural networks are an ideal tool for physicists. One area of neural network development related to this is that of physics-informed neural networks (PINN's). These are neural networks that have been given a priori knowledge of basic physical laws. This knowledge can be encoded into the model in a multitude of ways. Physics-informed layers of the neural network are one such encoding such as layers that enforce conservation laws for fluid dynamics. Another encoding is via loss function formulation, where the loss function incorporates terms derived from the governing physics equations. These terms will act to penalise the model for deviation from known physical laws. 
 
 \subsection{Loss Functions}
-Loss functions play a crucial role in PINNs often acting as a conduit for incorporating known physical laws. PINN loss functions usually have two purposes:
+Loss functions play a crucial role in PINNs, often acting as a conduit for incorporating known physical laws. PINN loss functions usually have two purposes:
 \begin{itemize}
 	\item Data Fitting: This ensures that the network accurately predicts values, much like in more general neural networks.
-	\item Physics Information: An encoding of physical laws such as ensuring specific PDE's are satisfied by penalising deviation from governing equations. 
+	\item Physics Information: An encoding of physical laws, such as ensuring specific PDEs are satisfied by penalising deviation from governing equations.
 \end{itemize}
 
-One issue that loss functions face is the requirement of being differentiable with respect to the weights and biases of a network. This often leads to simple regression functions such as mean squared error being selected in order to guarantee this property. A regression function may be paired with a simple physics informed term such as a penalisation of deviation from conservation terms. For example, conservation of mass within fluid dynamics for an ideal fluid can be expressed as 
+One issue that loss functions face is the requirement to be differentiable with respect to the weights and biases of a network. This often leads to simple regression functions such as mean squared error being selected in order to guarantee this property. A regression function may be paired with a simple physics informed term such as a penalisation of deviation from conservation terms. For example, the conservation of mass within fluid dynamics for an ideal fluid can be expressed as 
 \begin{equation}
 \label{FluidConservation}
 	\nabla \cdot\dot q = 0
 \end{equation}
  
-so a penalisation term in the loss function could be written as Conservation term $=\Lambda|\nabla \cdot \dot q|^2$ thus penalising deviation from equation \ref{FluidConservation}.
+so a penalisation term in the loss function could be written as Conservation term $=\Lambda|\nabla \cdot \dot q|^2$, thus penalising deviation from equation \ref{FluidConservation}.
 
 Another more applied issue that loss functions face is coding efficiency restraints. As on of the most called functions within the neural network training process a loss function is constrained to mathematically quick calculations and there often cannot afford to implement longer more involved calculations. 
 
 \subsection{Google JAX}
-Google JAX \cite{Jax} is a python machine learning framework developed by Google that collates the properties of Autograd \cite{Autograd} and XLA (Accelerated Linear Algebra) \cite{XLA} which include just in time (JIT) compilation). Autograd allows for automatic differentiation of both \texttt{python} and \texttt{NumPy} functions, a beneficial property when performing gradient descent during training of neural networks. JIT compilation allows functionally written pieces of python code to be converted from interpreted to compiled code. By JIT compiling code is converted into mathematically more efficient ''black-box" functions which map inputs to outputs in less time. This is especially beneficial for code that is frequently called as it need only be JIT compiled once before the ''black-box" version is  used thereafter.
+Google JAX \cite{Jax} is a Python machine learning framework developed by Google that collates the properties of Autograd \cite{Autograd} and XLA (Accelerated Linear Algebra) \cite{XLA}, which include just in time (JIT) compilation). Autograd allows for automatic differentiation of both Python and \texttt{NumPy} functions, a beneficial property when performing gradient descent during the training of neural networks. JIT compilation allows functionally written pieces of Python code to convert from interpreted to compiled code. By JIT compiling code is converted into mathematically more efficient ''black-box" functions, which map inputs to outputs in less time. JIT compiling is especially beneficial for code that is frequently called as it need only be compiled once before the ''black-box" version is used thereafter.
 
 
 \subsection{Lagrangian Mechanics}
 Here we provide a brief overview of Lagrangian Mechanics, a formalism of classical mechanics prioritising the energy of a system as its initial reference point. 
 
-Lagrange's formalism considers a set of generalised coordinates $\{q_1,q_2,\ldots,q_n,\dot{q}_1,\dot{q}_2,\ldots,\dot{q_n},t\}$(hereon denoted as the vectors $\bold{q}$ and $\bold{\dot{q}}$) which are used to express the kinetic, $T$, and potential, $V$, energies of the system. The Lagrangian 
+Lagrange's formalism considers a set of generalised coordinates $\{q_1,q_2,\ldots,q_n,\dot{q}_1,\dot{q}_2,\ldots,\dot{q_n},t\}$(hereon denoted as the vectors $\bold{q}$ and $\bold{\dot{q}}$), which are used to express the kinetic, $T$, and potential, $V$, energies of the system. The Lagrangian 
 \begin{equation}
 	\mathcal{L}(\bold{q},\bold{\dot{q}},t) = T(\bold{q},\bold{\dot{q}},t) - V(\bold{q},\bold{\dot{q}},t)
 \end{equation}
@@ -85,7 +86,7 @@ Lagrange's formalism considers a set of generalised coordinates $\{q_1,q_2,\ldot
 
 \noindent a functional of which stationary points are of interest. Hamilton's principle \cite{Goldstein} that these stationary points are where the Lagrangian models physical reality i.e. $\delta S = 0$. 
 
-From here the equations of motions (EoMs) can be obtained by applying the Euler-Lagrange equation which is equivalent to minimising the action (and thus finding its stationary points)
+From here the equations of motion (EoMs) can be obtained by applying the Euler-Lagrange equation, which is equivalent to minimising the action (and thus finding its stationary points)
 
 \begin{equation}
 \label{Eul-Lag}
@@ -119,27 +120,28 @@ and the potential energy by
 	V = \frac{1}{2}kx^2
 \end{equation}
 
-\noindent This gives the lagrangian
+\noindent This gives the Lagrangian
 \begin{equation}
-	\mathcal{L} = \frac{1}{2}m\ddot x^2 - \frac{1}{2}kx^2
+	\mathcal{L} = \frac{1}{2}m\ddot x^2 - \frac{1}{2}kx^2,
 \end{equation}
 
-\noindent which when inputted into equation \ref{Eul-Lag} once again provides our known equation of motion
+\noindent which when inputted into equation \ref{Eul-Lag} again provides our known equation of motion
 \begin{equation}
+\label{HOeqn}
 	\ddot x = \frac{k}{m}x
 \end{equation}
 
-Conservation laws can also be identified through the use of lagrangian mechanics via Noether's Theorem \cite{Goldstein}. It states that every differentiable symmetry of the action for a conservative system has a corresponding conservation law. The conserved values are often known as Noether currents when considered as functions of time. 
+Conservation laws can also be identified through the use of Lagrangian mechanics via Noether's Theorem \cite{Goldstein}. It states that every differentiable symmetry of the action for a conservative system has a corresponding conservation law. The conserved values are often known as Noether currents when considered as functions of time. 
 
 \subsubsection{Nonconservative Lagrangians \\}
-Galley, Tsang and Stein \cite{GalleyEtAl} propose a generalisation of Noether's Theorem to allow for non-conservative systems. This works by generalising to the nonconservative lagrangian, $\Lambda$, of the form 
+Galley, Tsang and Stein \cite{GalleyEtAl} propose a generalisation of Noether's Theorem to allow for non-conservative systems. This works by generalising to the nonconservative Lagrangian, $\Lambda$, of the form 
 
 \begin{equation}
 \label{non-con-lagran}
 	\Lambda = \mathcal{L}(\bold{q_1,\dot q_1},t) - \mathcal{L}(\bold{q_2,\dot q_2},t) + K(\bold{q_1,\dot q_1,q_2,\dot q_2},t)
 \end{equation}
 
-where $\mathcal{L}$ is the lagrangian as defined previously and $K$ is an additional coupling term physically similar to a non-conservative potential. The generalised coordinates are doubled, as explained by Galley \cite{Galley}, from $\bold{q,\dot q}$ to $\bold{q_1,\dot q_1, q_2, \dot q_2}$. This doubling of coordinates allows for a subtle but important change. The Euler-Lagrange equation \ref{Eul-Lag} provides an initial value problem (differential equation + initial conditions) whereas Hamiltons principle provides a boundary value problem in time (i.e. ``minimise the action passing through given initial and final time values"). This is a subtle difference and in conservative systems does not pose an issue. However, in non-conservative systems this breaks down due to such non-conservative behaviours as history dependance and non-linearity. The doubling of coordinates remedies this problem by converting the problem to one of an initial value problem with twice the degrees of freedom and two initial values $q_{i,1}$ and $q_{i,2}$. This process allows the creation of a free end point $q_f$. These new generalised coordinates must satisfy $q_1(t) = q_2(t)$ and $\dot q_1(t) = \dot q_2(t)$ for $t \in \{t_i, t_f\}$. The cartoon in figure \ref{doubledCoords} depicts this doubling of coordinates to create a free end point.
+where $\mathcal{L}$ is the Lagrangian as defined previously, and $K$ is an additional coupling term physically similar to a non-conservative potential. The generalised coordinates are doubled, as explained by Galley \cite{Galley}, from $\bold{q,\dot q}$ to $\bold{q_1,\dot q_1, q_2, \dot q_2}$. This doubling of coordinates allows for a subtle but important change. The Euler-Lagrange equation \ref{Eul-Lag} provides an initial value problem (differential equation + initial conditions) whereas Hamilton's principle provides a boundary value problem in time (i.e. ``minimise the action passing through given initial and final time values"). This is a subtle difference and, in conservative systems, does not pose an issue. However, in non-conservative systems this breaks down due to such non-conservative behaviours as history dependence and non-linearity. The doubling of coordinates remedies this problem by converting the problem to one of an initial value problem with twice the degrees of freedom and two initial values $q_{i,1}$ and $q_{i,2}$. This process allows the creation of a free end point $q_f$. These new generalised coordinates must satisfy $q_1(t) = q_2(t)$ and $\dot q_1(t) = \dot q_2(t)$ for $t \in \{t_i, t_f\}$. The cartoon in figure \ref{doubledCoords} depicts this doubling of coordinates to create the free end point.
 
 Galley \cite{Galley} also shows that $K$ must be antisymmetric in swapping the indices and therefore must also vanish for $\bold q_1 =\bold q_2,\bold{\dot q_1} =\bold{\dot q_2}$.
 
@@ -150,7 +152,7 @@ Galley \cite{Galley} also shows that $K$ must be antisymmetric in swapping the i
 	\caption{A cartoon depicting the doubling of coordinates posited by Galley \cite{Galley}. (a) shows a conservative system where initial and end points are fixed such that the solid path between them minimises the Action and dashed paths represent paths that do not minimise the Action. (b) shows a system with doubled coordinates. the point on the $t=t_f$ line is now free to vary but both the $q_{1,i}$ and $q_{2,i}$ points are fixed on the $t=t_i$ line. Here the $q_f$ point varies in order to globally minimise both paths. The physical limit occurs as $q_{2,i}\to q_{1,i}$ and, assuming the same system is modelled in both (a) and (b), rediscovers the path shown in (a).}
 \end{figure}
 
-For convenience a change of coordinates is often performed due to physical motivation. These are $q_- = (q_1 - q_2)/2$ and $q_+ = (q_1 + q_2)/2$  where the former can be considered a hypothetical displacement that vanishes in the physical limit $q_- \to 0$ and the latter the physically relevant component of the coordinates.
+For convenience, a change of coordinates is often performed due to physical motivation. These are $q_- = (q_1 - q_2)/2$ and $q_+ = (q_1 + q_2)/2$, where the former can be considered a hypothetical displacement that vanishes in the physical limit $q_- \to 0$ and the latter the physically relevant component of the coordinates.
 Note here that equation \ref{non-con-lagran} continues to satisfy the Euler Lagrange equation (equation \ref{Eul-Lag}) when evaluated in the physical limit (PL). This is formulated as
 
 \begin{equation}
@@ -159,15 +161,15 @@ Note here that equation \ref{non-con-lagran} continues to satisfy the Euler Lagr
 \end{equation}
 
 \subsubsection{Hamiltonian Mechanics \\}
-Another formulation of classical mechanics similar to Lagrangian mechanics is that of Hamiltonian mechanics. As the name suggests the object of interest here is the classical Hamiltonian $H$ defined as 
+Another formulation of classical mechanics similar to Lagrangian mechanics is that of Hamiltonian mechanics. As the name suggests, the object of interest here is the classical Hamiltonian $H$ defined as 
 \begin{equation}
 \label{Hamiltonian}
 	H = T + V
 \end{equation}
 
-Hamiltonian mechanics exchanges the use of generalised velocities $(\dot q)$ in favour of generalised momenta $p$. This is sometimes, but not always, equivalent to momenta in classical mechanics in the same way that $\dot\theta$ could be considered a velocity (time derivative of a coordinate $\theta$) but would not likely be ones initial idea for a velocity. This exchange does not affect the class of physical phenomena that can be described by Hamiltonian mechanics compared to Lagrangian mechanics; that is to say that these classes of phenomena are equivalent.
+Hamiltonian mechanics exchanges the use of generalised velocities $(\dot q)$ in favour of generalised momenta $p$. This is sometimes, but not always, equivalent to momenta in classical mechanics in the same way that $\dot\theta$ could be considered a velocity (time derivative of a coordinate $\theta$) but would not likely be ones initial idea for a velocity. This exchange does not affect the class of physical phenomena that Hamiltonian mechanics can describe compared to Lagrangian mechanics; that is to say that these classes of phenomena are equivalent.
 
-The Hamiltonian (equation \ref{Hamiltonian}) produces first order ordinary differential equations (ODEs) as the equations of motion
+The Hamiltonian (equation \ref{Hamiltonian}) produces first-order ordinary differential equations (ODEs) as the equations of motion
 
 \begin{equation}
 	\frac{dq_i}{dt} = \frac{\partial H}{\partial p_i}, \frac{dp_i}{dt} = -\frac{\partial H}{\partial q_i}
@@ -177,11 +179,11 @@ This formulation is often useful for symplectic integrators \cite{SanzSerna} as 
 
 \section{Slimplectic Integrator}
 \label{Symplectic}
-Integrators are another tool within the modern physicists toolbox. Many physics problems have non-analytic solutions and this is where integrators make their appearance. Many integrators exist and are specialised for different applications. The Runge-Kutta (RKn) method \cite{RungeKutta} is a well known and widely applied group of methods used for a balanced trade off between accuracy and efficiency. RK45 is perhaps paramount of these with an efficient method of finding solutions to problems with stronger than 4th order accuracy. One issue that Runge-Kutta faces however is that of compounding error. Whilst any one term has bounded error when using Runge-Kutta for integration, the total accumulation of error is not bounded causing issues for systems evolved over longer time periods. 
+Integrators are another tool within the modern physicist's toolbox. Many physics problems have non-analytic solutions, and this is where integrators make their appearance. Many integrators exist and are specialised for different applications. The Runge-Kutta (RKn) method \cite{RungeKutta} is a well-known and widely applied group of methods used for a balanced trade-off between accuracy and efficiency. RK45 is perhaps paramount for these, as it is an efficient method of finding solutions to problems with stronger than 4th-order accuracy. One issue that Runge-Kutta faces, however, is that of compounding error. Whilst any one term has a bounded error when using Runge-Kutta for integration, the total accumulation of error is not bounded, causing issues for systems that have been evolved over longer time periods. 
 
-A remedy to this is another class of integrators called Symplectic integrators. These preserve (up to computational rounding) the differential 2-form called the symplectic form. Preservation of the symplectic form is analogous to preservation of certain physical constants. Due to this preservation the symplectic integrator is often used in integration of systems over long time scales. This is particularly common in orbital mechanics \cite{WISDOM, ReinTamayo} but also finds uses in statistical algorithms \cite{Neal_MCMC}.
+One solution to the compounding error issue is using Symplectic integrators, a class of integrators that preserve the differential 2-form known as the symplectic form. This preservation, akin to the preservation of certain physical constants, makes Symplectic integrators particularly useful in integrating systems over long time scales. This is particularly common in orbital mechanics \cite{WISDOM, ReinTamayo} but also finds uses in statistical algorithms \cite{Neal_MCMC}.
 
-One construction of symplectic integrators is via the means of variational integrators which are determined by the variation of a discretised action. This differs from traditional numerical integrators, such as Runge-Kutta, which discretises the equations of motion themselves. 
+One way to construct symplectic integrators is through variational integrators, which are determined by the variation of a discretised action. This approach differs from traditional numerical integrators, such as Runge-Kutta, which discretise the equations of motion themselves. This unique construction method is one of the factors that contribute to the distinct properties and advantages of symplectic integrators.
 
 
 \begin{figure}
@@ -284,7 +286,7 @@ Here we outline the two pieces of code developed and testing framework to identi
 
 \subsection{Slimplectic Integrator 2.0}
 \label{SI2.0}
-Using the Google JAX package we have developed an "autodiffable" version of the Slimplectic integrator (hereon referred to as the JAX-based integrator). This follows the generation method outlined in section \ref{Symplectic} which matches that of Tsang et al \cite{Tsang_Slimplectic} but uses the JAX implementations of \texttt{Autograd} and \texttt{NumPy} in place of the \texttt{SymPy} package used in the original version. Similar to the original Slimplectic integrator, the JAX-based integrator takes values for r, the number of timesteps along with $\Delta t$ and initial conditions for $q$ and $\pi$ to forward integrate. In place of the \texttt{SymPy} expressions for $L$ and $K$, a python function with arguments $(q,\pi)$ with the form of the Lagrangian is inputted. 
+Using the Google JAX package, we have developed an "autodiffable" version of the Slimplectic integrator (hereon referred to as the JAX-based integrator). The integrator follows the generation method outlined in section \ref{Symplectic} which matches that of Tsang et al \cite{Tsang_Slimplectic} but uses the JAX implementations of \texttt{Autograd} and \texttt{NumPy} in place of the \texttt{SymPy} package used in the original version. Similar to the original Slimplectic integrator, the JAX-based integrator takes values for r, the number of timesteps along with $\Delta t$ and initial conditions for $q$ and $\pi$ to forward integrate. In place of the \texttt{SymPy} expressions for $L$ and $K$, a Python function with arguments $(q,\pi)$ with the form of the Lagrangian is inputted. 
 
 Two examples (sections \ref{DHO}, \ref{PRD}) are used to compare the SymPy-based and JAX-based Slimplectic Integrators over two metrics. The first of these being the time complexity of the integrator measured by determining $q$ and $\pi$ for a large number of timesteps. The second being the order of the method, determined by varying $r$ and observing the time taken to generate values for a fixed number of timesteps.
 %METRICS
@@ -327,7 +329,7 @@ The Poynting-Robertson drag manifests itself as the non-conservative term
 This example is chosen due to its use in Tsang et al. \cite{Tsang_Slimplectic} to compare the Runge-Kutta 4th order method.
 
 \subsection{Neural Network and Loss Function}
-The second piece of code is a neural network written using the Keras \cite{Keras} and Tensorflow \cite{TF} frameworks. The network uses a simple, multi-layer LSTM model \cite{LSTM} combined with a novel loss function which implements the JAX-based slimplectic integrator. The NN is built to identify coefficients of terms within the Lagrangian for Lagrangians of a specific 'family'. A 'family' of Lagrangians is defined to be the set of all Lagrangians with the same terms. For example, the DHO lagrangian in equation \ref{DHOeqn} would be part of the family of Lagrangians with the form 
+The second piece of code is a neural network written using the Keras \cite{Keras} and Tensorflow \cite{TF} frameworks. The network uses a simple, multi-layer LSTM model \cite{LSTM} combined with a novel loss function which implements the JAX-based slimplectic integrator. The NN is built to identify coefficients of terms within the Lagrangian for Lagrangians of a specific 'family'. A 'family' of Lagrangians is defined to be the set of all Lagrangians with the same terms. For example, the DHO Lagrangian in equation \ref{DHOeqn} would be part of the family of Lagrangians with the form 
 
 \begin{equation}
 	\label{DHOFamily}
@@ -386,7 +388,7 @@ We can therefore increase the accuracy of the integrator by increasing $r$. Figu
 \end{figure}
 
 \subsection{Bounding the Integrator Error}
-As with the original slimplectic integrator we investigate the fractional energy error relative to the analytic solutions energy. Here we observe almost identical behaviour to the original integrator. Mirroring figure 2 in Tsang et al. \cite{Tsang_Slimplectic} we compare the fractional energy error with the system evolution time for the JAX-based integrator and Runge-Kutta 2 and 4 methods. This is shown in figure \cite{EnergyPlot} and almost directly mirrors the original slimplectic integrators version of this figure. 
+As with the original slimplectic integrator we investigate the fractional energy error relative to the analytic solutions energy. Here we observe almost identical behaviour to the original integrator. Mirroring figure 2 in Tsang et al. \cite{Tsang_Slimplectic} we compare the fractional energy error with the system evolution time for the JAX-based integrator and Runge-Kutta 2 and 4 methods. This is shown in figure \ref{EnergyPlot} and almost directly mirrors the original slimplectic integrators version of this figure. 
 
 \begin{figure}
 	\label{EnergyPlot}
@@ -396,13 +398,21 @@ As with the original slimplectic integrator we investigate the fractional energy
 
 \subsection{Approximating DHO Functions}
 \label{NN Results}
-We now move to the NN which was trained on a dataset of $5.0\times10^5$ randomly generated non-conservative Lagrangians within the DHO family given by equation \ref{DHOFamily}. For each generated set of lagrangian coefficients, $\{c_1,c_2,c_3\}$, the conditions $c_1 > 0$ and $c_2,c_3 \geq 0$ were applied. Approximately $5\%$ of $c_2$ and $c_3$ values were randomly set to 0 such that the training dataset was guaranteed to have systems with $V,K = 0$. Negative values were discouraged through the implementation of an additional term in the loss function penalising coefficient values $ < -0.1$. This limit was chosen as to not discourage the neural network from choosing zero valued coefficients whilst still discouraging non-physical systems. 
+We now move to the NN which was trained on a dataset of $5.0\times10^5$ randomly generated non-conservative Lagrangians within the DHO family given by equation \ref{DHOFamily}. For each generated set of Lagrangian coefficients, $\{c_1,c_2,c_3\}$, the conditions $c_1 > 0$ and $c_2,c_3 \geq 0$ were applied. Approximately $5\%$ of $c_2$ and $c_3$ values were randomly set to 0 such that the training dataset was guaranteed to have systems with $V,K = 0$. Negative values were discouraged through the implementation of an additional term in the loss function penalising coefficient values $ < -0.1$. This limit was chosen as to not discourage the neural network from choosing zero valued coefficients whilst still discouraging non-physical systems. 
 
 Training of the model was temperamental and often susceptible to random permutations of the dataset causing diverging loss values which eventually broke models. By increasing batch sizes and introducing loss caps this was eventually remedied to produce a model that identifies trends within the data. Although not able to perfectly reproduce equations of motion as yet, figure \ref{model_comp} shows promising progress for the NN. The model produced a RMS error value of $\pm0.050$ in q and $\pm0.10$ in $\pi$. The loss function was also varied during the training process, initially weighting more in favour of the RMS error in q to compensate for the fact that a majority of systems produced larger $\pi$-values than q-values. 
 
 Biasing the loss function only use RMS error in $\pi$ produced results of interest, initially reducing loss to $10^{-4}$, a before unseen value. However, this was accomplished by the model choosing $c_1\approx c_2\approx c_3$ and then varying these values by small quantities to appease the loss function, thereby not producing physically accurate predictions. 
 
-Another result of interest was the models ability to train to an accuracy greater than that used to produce figure \ref{model_comp}. The training process frequently approached a validation loss $\approx 0.20$ but often struggled to become more accurate than this with the loss soon-after ``blowing up", possibly due to the complexity of the loss function below this resolution. In figure \ref{model_comp} we can see the phase of q has been matched but the predicted amplitude is smaller than the true amplitude. Remedying this would require scaling of both potentials V and K by the same quantity. If one of these parameters were to change but not the other the model would see a ``de-syncing" of the phase thereby increasing loss. Therefore the complexity in the loss function here may be down to the requirement to scale both coefficients equally. This issue was identified after exploring gradient descent in the embedding space to study the loss function. Figure \ref{lossSlices} identifies this behaviour by observing the behaviour of the loss function about the global minima, i.e. the true embedding of the function.
+Another result of interest was the models ability to train to an accuracy greater than that used to produce figure \ref{model_comp}. The training process frequently approached a validation loss $\approx 0.20$ but often struggled to become more accurate than this with the loss soon-after ``blowing up", possibly due to the complexity of the loss function below this resolution. In figure \ref{model_comp} we can see the phase of q has been matched but the predicted amplitude is smaller than the true amplitude. Remedying this would require scaling multiple coefficients by the same quantity. If one of these parameters were to change but not the other the model would see a ``de-syncing" of the phase thereby increasing loss. Therefore the complexity in the loss function here may be down to the requirement to scale multiple coefficients equally. This issue was identified after exploring gradient descent in the embedding space to study the loss function. Figure \ref{lossSlices} identifies this behaviour by observing the behaviour of the loss function about the global minima, i.e. the true embedding of the function.
+
+We observe a generally decreasing behaviour of the loss function towards the global minima although the spike for $\Delta c_1 = -2$ produced by a divide by zero problem in the equation of motion may cause issues. The equation of motion for a harmonic oscillator confirms this with $c_1$ proportional to the mass of the harmonic oscillator in equation \ref{HOeqn}.
+
+
+
+A similar term will exist within the DHO equation of motion but is not shown due to its non-analyticity. 
+
+This may be the cause of  the neural networks lack of ability to find the global minima whilst training causing rapid growth in the loss if come into contact with. The loss function in the far-regime plots for $c_2$ and $c_3$ clearly show the non-negativity component creating an antisymmetric behaviour in the plots. 
 
 \begin{figure*}
 	\centering
@@ -414,24 +424,27 @@ Another result of interest was the models ability to train to an accuracy greate
 \begin{figure}
 	\centering
 	\label{lossSlices}
-	\includegraphics[width=\columnwidth]{pingu.jpg}
-	\caption{ee}
+	\includegraphics[width=\columnwidth]{loss-function-behaviour.pdf}
+	\caption{Observations of the Loss function about the global minima (true embedding) for the DHO embedding ${c_1=2,c_2=3,c_3=1}$. $\Delta c_i$ shows the deviance from the true embedding with fixed values for $c_j$ with $j\neq i$. Of note is the magnitude of the ``spike" at $\Delta c_1 = -2$ which corresponds to a predicted value of $c_1 =0$. This is therefore a division by zero issue at this point and can be shown through the harmonic oscillator equation of motion $\ddot q = (k/m) q$.}
 \end{figure}
 
 \section{Discussion}
+\subsection{Slimplectic Integrator}
 As reported in section \ref{SI2.0} the JAX-based integrator runs in what is experienced by the user as constant time for the number of timesteps $N<10^6$. The computation time was fit to the function $\log(t)=a\log(N)$ which for $N>10^4$ returned $a = 1.0140\pm0.0042$ suggesting the growth in the integration time is linear. For values of r similar behaviour was observed but the growth is curtailed before it notably contributes to computation time due to float precision affecting the ability to determine roots of the $k^{\textrm{th}}$ Legendre polynomial precisely for $k>40$. This may be remedied with the use of higher precision values within the program however XLA  (and therefore JAX) does not yet (as of time of writing) support values more precise than float64 (doubles). 
 
 An area of interest is the small spike observed for $7\leq r \leq 9$ in figure \ref{rplot}. This was reproduced with multiple sets of data but of uncertain origin. Our best guess is that this occurs due to some attempt at an optimisation occurring for data larger than 8 bit ($r=7\implies$order $=9 > 8$). This however does not produce too detrimental an effect to perform calculations at this order although a higher order could be used to generate more accurate results in a quicker time. 
 Potential improvement to the integrator could be made via the implementation of varying timesteps as this would allow for preserving both symplectic-momentum conservation and momentum-energy conservation \cite{Ge}. Adaptive timestep methods do however allow this \cite{Kane}.
 
 
-
+\subsection{Neural Network}
 
 The JAX-based integrator's fixed JIT compile cost allows for the application of the integrator to multiple areas in physics. The integrator can be compiled once and then used over a spectra of initial conditions or physical parameters (Lagrangian coefficients) allowing for quick exploration of a problem space at a high level of accuracy in a small amount of time. This could be taken further and by compiling a larger family of Lagrangians (in the sense that the set of harmonic oscillator Lagrangians is a subset of the set of DHO Lagrangians), parts of systems such as charge, damping, and nuclear forces could be switched on and off or varied through a spectrum of values.
 
 This process could also be applied to field-theory like systems which model chains of smaller subsystems each similar to one another. Here the low computation time once again allows for the modelling of much larger systems than previously available with a similar style of integrator. The Lagrangian in this example being a sum of the Lagrangians of the smaller coupled systems which after the first element of the sum was compiled could be included in the calculation at a lower computational cost. Examples of this could be molecular dynamics modelling such as those discussed by Tuckerman and Martyna \cite{MolecularDynamics} or statistical mechanics systems. 
 
 The neural network produced promising results but was not able to entirely predict accurate Lagrangians from the $q$ and $\pi$ values inputted. We propose some areas of future development in order to better train the network with a possibility of producing a fully functioning model. As with most neural networks, a larger, better curated dataset may allow for training to a more optimised level. The trained model performs worse than average at attempting to classify systems comprised entirely of kinetic energy (KE) ($c_2,c_3 = 0$). This is an issue that may be solved by training the model on a dataset comprising of more functions of this form. The dataset used had approximately 1000 such samples spread across many batches (an average of 1 KE only system per batch). 
+
+\subsection{Loss Function and Model Variants}
 
 Another area of improvement could come with the development of a more complex model. Either through a larger neural network or through a different choice of loss function. A more complicated network would allow the model to encapsulate more information, this does however increase the chance of the model overfitting to data. Layer choices could also be varied from the LSTM layers chosen within this model to push the model to focus on specific behaviours.  As with the analysis in \ref{NN Results}, the loss function could have its weighting between the RMS calculations varied or perhaps a different calculation could be performed such as mean absolute error (MAE, akin to the L$_1$ norm) or Huber loss (a cross between MAE and RMS in different regions). 
 The other term introduced to the loss function was the non-negativity requirement which was encoded as the continuous function 
@@ -444,17 +457,49 @@ The other term introduced to the loss function was the non-negativity requiremen
 	\end{cases}
 \end{equation}
 
-during development of the neural network we discussed different implementations of the loss function such as using exponential growth in the negative region, the implementation of the ``buffer region" for $-0.1 < c_1 < 0$ and whether or not there should be penalisation for negative values at all. The resultant loss function as in equation \ref{nonnegLoss} came about as a choice to penalise strongly values that deviated below the buffer region whilst still maintaining an entirely $C_1$ (differentiable) loss function. Here the choice of exponential growth would have lead to a discontinuity in the derivative of the loss function at $c_i = 0.1$. Another issue discovered here was due to the model discovering 0 valued masses which cause ``explosions" in the predicted functions behaviour. This issue is highlighted in figure \ref{lossSlices} and implies that the loss function may need more a-priori physics assumptions. These could be the penalising of negative/zero valued coefficients differently if they are dependant on concepts such as mass which are strictly positive when compared to the spring constant, $k$, for which $k=0$ represents a system with no spring behaviour but is still physically possible. 
+during development of the neural network we discussed different implementations of the loss function such as using exponential growth in the negative region, the implementation of the ``buffer region" for $-0.1 < c_1 < 0$ and whether or not there should be penalisation for negative values at all. The resultant loss function as in equation \ref{nonnegLoss} came about as a choice to penalise strongly values that deviated below the buffer region whilst still maintaining an entirely $C_1$ (differentiable) loss function. Here the choice of exponential growth would have lead to a discontinuity in the derivative of the loss function at $c_i = 0.1$. \\
+
+An issue discovered here was due to the model discovering 0 valued masses which cause ``explosions" in the predicted functions behaviour. This issue is highlighted in figure \ref{lossSlices} and implies that the loss function may need more a-priori physics assumptions. These could be the penalising of negative/zero valued coefficients differently if they are dependant on concepts such as mass which are strictly positive when compared to the spring constant, $k$, for which $k=0$ represents a system with no spring behaviour but is still physically possible. 
+
+A physical law embedded into the loss function was that of Lagrangian independence and is why the loss is calculated in the domain of the neural network (space of $q$ and $\pi$ values) and not the codomain (space of Lagrangian coefficients). By choosing the loss function as we did, the model will not bias one Lagrangian over another. Consider the example where two different Lagrangians $L_a, L_b$ both produce the same equation of motion $\textrm{EoM}_1$. If the loss function were calculated using the Lagrangian coefficients (except for the non-negativity requirement), the loss function would preferentially identify coefficients that match within the dataset. Our loss function does not however see this issue due to no loss calculations being performed on the Lagrangian coefficients themselves. \\
+
+An aim for the neural network was for it to identify and preserve conservation laws from input motion data through to the outputted Lagrangian. Tests for this can be performed via validating the model on unseen systems (of the trained Lagrangian family) that adhere to certain conservation laws such as harmonic oscillators within the DHO family. However, this behaviour likely only comes through a well optimised and trained model.
+
+One such reason for the lack of optimisation was the NNs inability to correctly obtain amplitudes as seen in figure \ref{model_comp}. Manually varying coefficients outputted from the NN discovered that often a larger $c_1$ coefficient would produce more accurate motion data. The under-prediction of this coefficient may be related to the discussion about the loss function as mentioned previously within this section as the $c_1$ coefficient is mass dependant. This may therefore be remedied by a more specialised loss function incorporating more physical knowledge. 
+At this point we would be remiss not to mention that this discussion errs close to that of meta-physics, questioning what constitutes human bias within our understanding of physics when compared with what is mathematically true about the universe in which we live. We have attempted to take a holistic approach to this issue providing the neural network with as little physics knowledge as is necessary to tackle the problem at hand, namely the non-negativity conditions which are required to allow the integrator to function and that of the integrator itself with its embedded formulation of discretised non-conservative Lagrangian mechanics. 
+
+Returning to the land of ``regular"-physics we consider one other solution to the amplitude-scaling issue. By varying the DHO Lagrangian embedding we can provide parameters that scale multiple terms. Potential embeddings of this format could be represented as
+
+\begin{subequations}
+\label{newEmbeddings}
+\begin{align}
+		\Lambda = c_1 T - c_2\left(c_3V + c_4K\right) \\
+		\Lambda = c_1\left(c_2 T - c_3\left(c_4V + c_5K\right)\right) \\
+		\Lambda = c_1T - c_2V-c_3K + c_4(T-V)
+		\\+ c_5(T-K) - c_6(V+K) + c_7(T-V-K) \notag
+\end{align}
+\end{subequations}
+
+where $T=\dot q^2, V = q^2, K = \dot q_+q_-$ for notational compactness and more parameters are introduced to allow grouped varying of coefficients. Each of these attempt to solve the issue at hand but in doing so may introduce more issues. All three of these introduce more coefficients requiring the neural network to accurately predict four to seven values as opposed to the three required previously which will likely require more computational work and training. Another issues with \ref{newEmbeddings}c is that the problem is not solved despite initially seeming so. If $c_5$ were increased to scale both $V$ and $K$, the coefficients $c_2$ and $c_3$ would also need to vary to maintain the ratio $c_2:c_3$. \ref{newEmbeddings}a and \ref{newEmbeddings}b however may provide solutions and merit further exploration. 
+
+\subsection{Further Applications}
+
+Although not a fully optimised model, the neural network does represent progression in a good direction. We envisage a working model having a multitude of physics and more generalised applications such as identifying celestial dynamics  behaviour within astrophysics. A trained model may be able to identify equations of motion corresponding to unseen bodies such as planets affecting stellar movement. This could also be used at small scales to classify motion of particles in complex systems and identify the main contributors to this behaviour. The classification and identification behaviour may have applications in a variety of other fields. Experimental study of fluid dynamics and climate sciences stand out as interesting candidates for application due to complex behaviour of the systems involved. 
+More generalised applications could exist within engineering disciplines where the neural network could be used to improve designs based on testing feedback or within robotics where advanced perception techniques could be developed such as the ability to identify and predict the motion of objects.
+
+Clearly these future applications will require a neural network that is trained on more than DHO data. However the underlying training process will be similar across any family of Lagrangians but may require more complex networks and much larger datasets to produce satisfactory results.
 
 
-
-A physical law embedded into the loss function was that of lagrangian independence and is why the loss is calculated in the domain of the neural network (space of $q$ and $\pi$ values) and not the codomain (space of Lagrangian coefficients). By choosing the loss function as we did, the model will not bias one Lagrangian over another. Consider the example where two different lagrangians $L_a, L_b$ both produce the same equation of motion $\textrm{EoM}_1$. If the loss function were calculated using the Lagrangian coefficients (except for the non-negativity requirement), the loss function would preferentially identify coefficients that match within the dataset. Our loss function does not however see this issue due to no loss calculations being performed on the Lagrangian coefficients themselves.
 
 \section{Conclusion}
+We have successfully developed a GPU/generally optimised version of the slimplectic integrator, a non-conservative variational integrator, using the JAX framework which for many purposes runs in constant time allowing for highly accurate, large systems to be integrated and in linear time for systems integrated for $N>10^6$ timesteps. This integrator was then implemented within the loss function of a neural network that has produced promising results when trained to identify the Lagrangian governing a system from motion data. The loss function is defined in equation \ref{lossfunc}. 
+
+Trained on a dataset of damped harmonic oscillators the neural network predicts equations of this form with the scope to train on larger datasets in order to predict a greater scope of functions. This neural network does not perfectly reproduce these equations of motion but could possibly with future development and investigation into the behaviour of the loss function. The neural network predicts a Lagrangian that produces $q$ values accurate to $\pm 0.010$ and $\pi$ values accurate to $\pm 0.10$ in a majority of cases. The loss function and model training method ran into issues in the low loss domain, possibly due to divide by 0 errors as highlighted in figure \ref{lossSlices}. This project was ultimately time constrained and further research and training of the loss function will follow shortly. \\
 \ack
 I would like to thank my project partner Joshua Coles for his indispensable coding abilities, ideas and overall support throughout this project. Without him I would still probably be stuck trying to set up the correct python environment. I would also like to thank my project supervisor Dr David Tsang. His advice and mentorship have been invaluable and I have very much enjoyed our often wandering discussions during project meetings. 
+
 \section*{References}
 \bibliographystyle{iopart-num}
-\bibliography{references}
+\bibliography{references.bib}
 
 \end{document}
