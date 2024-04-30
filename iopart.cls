@@ -756,7 +756,7 @@
 \sfcode`\.=1000\relax}{\endlist}
 %
 \def\refs{\begin{harvard}}
-\def\endrefs{\end{harvard}}
+%\def\endrefs{\end{harvard}}
 %
 \newenvironment{indented}{\begin{indented}}{\end{indented}}
 \newenvironment{varindent}[1]{\begin{varindent}{#1}}{\end{varindent}}
